@@ -38,10 +38,12 @@ function wiki_content(&$a) {
 	if (count($r)) {
 		$r = q("SELECT `content` FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['commit_id']));
 		if (count($r)) {
-			$content = $r[0]['content'];
+			require_once("parser/wikiParser.class.php");
+			$parser = new wikiParser();
+			$content = $parser->parse($r[0]['content']);
 		}
 	} else {
-		$content = "SELECT commit id did not return any rows.</br>";
+		$content = "Did not find page with title " . $page_name . "</br>";
 	}
 
 	return $o . "<br/>" . $content;
