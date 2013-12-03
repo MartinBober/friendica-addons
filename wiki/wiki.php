@@ -34,7 +34,7 @@ function wiki_content(&$a) {
   	}
 	
 	$content = "";
-	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", $page_name);
+	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
 	if (count($r)) {
 		$r = q("SELECT `content` FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['commit_id']));
 		if (count($r)) {
