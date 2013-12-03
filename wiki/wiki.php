@@ -85,16 +85,32 @@ function show_edit(&$a) {
 	$content .= "<hr/>";
 	$content .= "<form action=\"/wiki/" . $page_name ."?action=edit\" method=\"post\" >";
 	$content .= "<textarea name=\"input_content\">" . htmlentities($input_content) . "</textarea><br/>";
-	$content .= "<input type=\"submit\" value=\"send\"/>";
+	$content .= "<input type=\"submit\" value=\"Preview\" formaction=\"/wiki/" . $page_name ."?action=edit\"/>";
+	$content .= "<input type=\"submit\" value=\"Commit\" formaction=\"/wiki/" . $page_name ."?action=commit\"/>";
 	$content .= "</form>";
 	
 	return $content;
+}
+
+function commit_edit(&$a) {
+	$page_name = get_page_name($a);
+	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
+	if (count($r)) {
+		$commit_id = $r[0]['commit_id'];
+		q("INSERT INTO wiki_commits (author, predecessor,time,content) VALUES ('annon', %d, NOW(), '%s')", intval($commit_id), dbesc($_POST['input_content']));
+		q("UPDATE wiki_pages SET commit_id=LAST_INSERT_ID() WHERE title='%s'", dbesc($page_name));
+
+	}
 }
 
 function wiki_content(&$a) {
 
 	if ($_GET['action'] == 'edit') {
 		return $o . show_edit($a);
+	}
+
+	if ($_GET['action'] == 'commit') {
+		commit_edit($a);
 	}
 	
 	return $o . show_page($a);
