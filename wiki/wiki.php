@@ -24,7 +24,7 @@ function wiki_module() {
 
 }
 
-function wiki_content(&$a) {
+function get_page_name(&$a) {
 	$page_name="";
 	for($i=1; $i< $a->argc; $i++) {
 		$page_name .= $a->argv[$i];
@@ -32,7 +32,11 @@ function wiki_content(&$a) {
 			$page_name .= "/";
 		}
   	}
-	
+	return $page_name;
+}
+
+
+function get_page_content($page_name) {
 	$content = "";
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
 	if (count($r)) {
@@ -45,8 +49,55 @@ function wiki_content(&$a) {
 	} else {
 		$content = "Did not find page with title " . $page_name . "</br>";
 	}
+	return $content;
+}
 
-	return $o . "<br/>" . $content;
+function get_page_raw_content($page_name) {
+	$content = "";
+	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
+	if (count($r)) {
+		$r = q("SELECT `content` FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['commit_id']));
+		if (count($r)) {
+			$content = $r[0]['content'];
+		}
+	} else {
+		$content = "Did not find page with title " . $page_name . "</br>";
+	}
+	return $content;
+}
+
+function show_page(&$a) {
+	$page_name = get_page_name($a);
+	$content = get_page_content($page_name);
+	
+	return "<br/>" . $content;
+}
+
+function show_edit(&$a) {
+	require_once("parser/wikiParser.class.php");
+	$page_name = get_page_name($a);
+	$input_content = $_POST['input_content'];
+	if (!array_key_exists('input_content', $_POST)) {
+		$input_content = get_page_raw_content($page_name);
+	}
+	$parser = new wikiParser();
+	$content = $parser->parse($input_content);
+	$content .= "<hr/>";
+	$content .= "<form action=\"/wiki/" . $page_name ."?action=edit\" method=\"post\" >";
+	$content .= "<textarea name=\"input_content\">" . htmlentities($input_content) . "</textarea><br/>";
+	$content .= "<input type=\"submit\" value=\"send\"/>";
+	$content .= "</form>";
+	
+	return $content;
+}
+
+function wiki_content(&$a) {
+
+	if ($_GET['action'] == 'edit') {
+		return $o . show_edit($a);
+	}
+	
+	return $o . show_page($a);
 }
 
 ?>
