@@ -100,6 +100,7 @@ function show_edit(&$a) {
 	$content .= "<form action=\"/wiki/" . $page_name ."?action=edit\" method=\"post\" >";
 	$content .= "<textarea name=\"input_content\" cols=\"80\" rows=\"20\">" . htmlentities($input_content) . "</textarea><br/>";
 	$content .= "Comment: <input name=\"input_comment\" type=\"text\" value=\"" . htmlentities($comment) . "\"/><br/>";
+	$content .= "<input type=\"submit\" value=\"Cancel\" formaction=\"/wiki/" . $page_name . "\"/>";
 	$content .= "<input type=\"submit\" value=\"Preview\" formaction=\"/wiki/" . $page_name ."?action=edit\"/>";
 	$content .= "<input type=\"submit\" value=\"Commit\" formaction=\"/wiki/" . $page_name ."?action=commit\"/>";
 	$content .= "</form>";
@@ -128,7 +129,11 @@ function wiki_content(&$a) {
 		commit_edit($a);
 	}
 	
-	return $o . show_page($a) . "<p>" . wiki_get_user($a) . "</p>";
+	$page_name = get_page_name($a);
+	$content = show_page($a);
+	$content .= "<hr/>";
+	$content .= "<p align=\"right\">[<a href=\"/wiki/" . $page_name . "?action=edit\">Edit</a>] ";
+	return $o . $content;
 }
 
 ?>
