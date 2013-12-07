@@ -80,11 +80,16 @@ function show_edit(&$a) {
 	if (!array_key_exists('input_content', $_POST)) {
 		$input_content = get_page_raw_content($page_name);
 	}
+	$comment = "";
+	if (array_key_exists('input_comment', $_POST)) {
+		$comment = $_POST['input_comment'];
+	}
 	$parser = new wikiParser();
 	$content = $parser->parse($input_content);
 	$content .= "<hr/>";
 	$content .= "<form action=\"/wiki/" . $page_name ."?action=edit\" method=\"post\" >";
-	$content .= "<textarea name=\"input_content\">" . htmlentities($input_content) . "</textarea><br/>";
+	$content .= "<textarea name=\"input_content\" cols=\"80\" rows=\"20\">" . htmlentities($input_content) . "</textarea><br/>";
+	$content .= "Comment: <input name=\"input_comment\" type=\"text\" value=\"" . htmlentities($comment) . "\"/><br/>";
 	$content .= "<input type=\"submit\" value=\"Preview\" formaction=\"/wiki/" . $page_name ."?action=edit\"/>";
 	$content .= "<input type=\"submit\" value=\"Commit\" formaction=\"/wiki/" . $page_name ."?action=commit\"/>";
 	$content .= "</form>";
@@ -97,7 +102,7 @@ function commit_edit(&$a) {
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
 	if (count($r)) {
 		$commit_id = $r[0]['commit_id'];
-		q("INSERT INTO wiki_commits (author, predecessor,time,content) VALUES ('annon', %d, NOW(), '%s')", intval($commit_id), dbesc($_POST['input_content']));
+		q("INSERT INTO wiki_commits (author, predecessor,time,content,comment) VALUES ('annon', %d, NOW(), '%s', '%s')", intval($commit_id), dbesc($_POST['input_content']), dbesc($_POST['input_comment']));
 		q("UPDATE wiki_pages SET commit_id=LAST_INSERT_ID() WHERE title='%s'", dbesc($page_name));
 
 	}
