@@ -35,6 +35,16 @@ function get_page_name(&$a) {
 	return $page_name;
 }
 
+function wiki_get_user(&$a) {
+	if(local_user()) {
+        	return $a->user['nickname'] . '@' . substr($a->get_baseurl(),strpos($a->get_baseurl(),'://')+3);
+	}
+	if(remote_user()) {
+		return $_SESSION['handle'];
+	}
+	return "annon";
+}
+
 
 function get_page_content($page_name) {
 	$content = "";
@@ -102,7 +112,7 @@ function commit_edit(&$a) {
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
 	if (count($r)) {
 		$commit_id = $r[0]['commit_id'];
-		q("INSERT INTO wiki_commits (author, predecessor,time,content,comment) VALUES ('annon', %d, NOW(), '%s', '%s')", intval($commit_id), dbesc($_POST['input_content']), dbesc($_POST['input_comment']));
+		q("INSERT INTO wiki_commits (author, predecessor,time,content,comment) VALUES ('%s', %d, NOW(), '%s', '%s')", dbesc(wiki_get_user($a)), intval($commit_id), dbesc($_POST['input_content']), dbesc($_POST['input_comment']));
 		q("UPDATE wiki_pages SET commit_id=LAST_INSERT_ID() WHERE title='%s'", dbesc($page_name));
 
 	}
@@ -118,7 +128,7 @@ function wiki_content(&$a) {
 		commit_edit($a);
 	}
 	
-	return $o . show_page($a);
+	return $o . show_page($a) . "<p>" . wiki_get_user($a) . "</p>";
 }
 
 ?>
