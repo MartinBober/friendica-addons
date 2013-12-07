@@ -3,7 +3,7 @@
 /*
 * Name: Friendica Wiki Plugin
 * Description: Enables users to write and contribute to wiki pages
-* Version: 0.1.1
+* Version: 0.1.2
 * Author: Martin Bober <code@mbober.de>
 */
 
@@ -13,10 +13,12 @@ function wiki_install() {
 	dbq("CREATE TABLE IF NOT EXISTS wiki_commits (commit_id INT PRIMARY KEY AUTO_INCREMENT, author TEXT, predecessor INTEGER, time TIMESTAMP NOT NULL, comment TEXT, content LONGTEXT NOT NULL) COLLATE utf8_general_ci");
 	dbq("CREATE TABLE IF NOT EXISTS wiki_pages (title VARCHAR(256) NOT NULL PRIMARY KEY, commit_id INT, locked_by TEXT, locked_until TIMESTAMP) COLLATE utf8_general_ci");
 	dbq("CREATE TABLE IF NOT EXISTS wiki_acl (item VARCHAR(256) NOT NULL, item_type ENUM('PAGE','NAMESPACE'), user TEXT, user_role ENUM('SELF','FRIEND_OF'), acces_right ENUM('READ','READ_HISTORY','WRITE','DELETE'), action ENUM('ALLOW','DENY'), INDEX obj_right_idx (acces_right, item, item_type))  COLLATE utf8_general_ci");
+	register_hook('app_menu', 'addon/wiki/wiki.php', 'wiki_app_menu');
 	logger("installed wiki");
 }
 
 function wiki_uninstall() {
+	unregister_hook('app_menu', 'addon/wiki/wiki.php', 'wiki_app_menu');
 	logger("uninstalled wiki");
 }
 
@@ -143,6 +145,11 @@ function wiki_content(&$a) {
 	$content .= "<hr/>";
 	$content .= "<p align=\"right\">[<a href=\"/wiki/" . $page_name . "?action=edit\">Edit</a>] ";
 	return $o . $content;
+}
+
+
+function wiki_app_menu($a,&$b) {
+	$b['app_menu'][] = '<div class="app-title"><a href="wiki">' . "Wiki" . '</a></div>';
 }
 
 ?>
