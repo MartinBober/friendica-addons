@@ -32,6 +32,9 @@ function get_page_name(&$a) {
 			$page_name .= "/";
 		}
   	}
+	if ($page_name == "") {
+		$page_name = "main";
+	}
 	return $page_name;
 }
 
@@ -71,7 +74,7 @@ function get_page_raw_content($page_name) {
 			$content = $r[0]['content'];
 		}
 	} else {
-		$content = "Did not find page with title " . $page_name . "</br>";
+		$content = "Did not find page with title " . $page_name;
 	}
 	return $content;
 }
@@ -112,12 +115,16 @@ function commit_edit(&$a) {
 	$page_name = get_page_name($a);
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
 	if (count($r)) {
+		// Page already exists
 		$commit_id = $r[0]['commit_id'];
 		q("INSERT INTO wiki_commits (author, predecessor,time,content,comment) VALUES ('%s', %d, NOW(), '%s', '%s')", dbesc(wiki_get_user($a)), intval($commit_id), dbesc($_POST['input_content']), dbesc($_POST['input_comment']));
 		q("UPDATE wiki_pages SET commit_id=LAST_INSERT_ID() WHERE title='%s'", dbesc($page_name));
-		info("Wiki page saved.");
+		info("Wiki page'" . $page_name ."' updated.");
 	} else {
-		notice("Error saving wiki page!");	
+		// Have to create page
+		q("INSERT INTO wiki_commits (author,time,content,comment) VALUES ('%s', NOW(), '%s', '%s')", dbesc(wiki_get_user($a)), dbesc($_POST['input_content']), dbesc($_POST['input_comment']));
+		q("INSERT INTO wiki_pages (title, commit_id) VALUES ('%s', LAST_INSERT_ID())", dbesc($page_name));
+		info("Wiki page'" . $page_name . "' created.");	
 	}
 }
 
