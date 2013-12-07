@@ -115,7 +115,9 @@ function commit_edit(&$a) {
 		$commit_id = $r[0]['commit_id'];
 		q("INSERT INTO wiki_commits (author, predecessor,time,content,comment) VALUES ('%s', %d, NOW(), '%s', '%s')", dbesc(wiki_get_user($a)), intval($commit_id), dbesc($_POST['input_content']), dbesc($_POST['input_comment']));
 		q("UPDATE wiki_pages SET commit_id=LAST_INSERT_ID() WHERE title='%s'", dbesc($page_name));
-
+		info("Wiki page saved.");
+	} else {
+		notice("Error saving wiki page!");	
 	}
 }
 
