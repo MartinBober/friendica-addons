@@ -127,14 +127,16 @@ function show_edit(&$a) {
 }
 
 function show_history(&$a) {
+	require_once("parser/wikiParser.class.php");
 	$content = "<table border=\"1\">";
 	$content .="<tr><th>ID</th><th>Timestamp</th><th>Author</th><th>Comment</th></tr>";
+	$parser = new wikiParser();
 	foreach (get_revisions(get_page_name($a)) as $r) {
 		$content .= "<tr>";
 		$content .= "<td>" . $r['commit_id'] . "</td>";
 		$content .= "<td>" . $r['time'] . "</td>";
 		$content .= "<td>" . $r['author'] . "</td>";
-		$content .= "<td>" . $r['comment'] . "</td>";
+		$content .= "<td>" . $parser->parse($r['comment']) . "</td>";
 		$content .= "</tr>";
 	}
 	$content .= "</table>";
