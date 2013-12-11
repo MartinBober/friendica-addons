@@ -81,6 +81,19 @@ function get_page_raw_content($page_name) {
 	return $content;
 }
 
+function get_revisions($page_name) {
+	$buf = array();
+	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
+	if (count($r)) {
+		$r = q("SELECT commit_id, author, predecessor, time, comment FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['commit_id']));
+		while (! is_null($r[0]['predecessor'])) {
+			array_push($buf, $r[0]);
+			$r = q("SELECT commit_id, author, predecessor, time, comment FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['predecessor']));
+		}
+	}
+	return $buf;
+}
+
 function show_page(&$a) {
 	$page_name = get_page_name($a);
 	$content = get_page_content($page_name);
@@ -113,6 +126,21 @@ function show_edit(&$a) {
 	return $content;
 }
 
+function show_history(&$a) {
+	$content = "<table border=\"1\">";
+	$content .="<tr><th>ID</th><th>Timestamp</th><th>Author</th><th>Comment</th></tr>";
+	foreach (get_revisions(get_page_name($a)) as $r) {
+		$content .= "<tr>";
+		$content .= "<td>" . $r['commit_id'] . "</td>";
+		$content .= "<td>" . $r['time'] . "</td>";
+		$content .= "<td>" . $r['author'] . "</td>";
+		$content .= "<td>" . $r['comment'] . "</td>";
+		$content .= "</tr>";
+	}
+	$content .= "</table>";
+	return $content;
+}
+
 function commit_edit(&$a) {
 	$page_name = get_page_name($a);
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
@@ -139,11 +167,18 @@ function wiki_content(&$a) {
 	if ($_GET['action'] == 'commit') {
 		commit_edit($a);
 	}
+
+	if ($_GET['action'] == 'show_history') {
+		return $o. show_history($a);
+	}
 	
 	$page_name = get_page_name($a);
 	$content = show_page($a);
 	$content .= "<hr/>";
-	$content .= "<p align=\"right\">[<a href=\"/wiki/" . $page_name . "?action=edit\">Edit</a>] ";
+	$content .= "<p align=\"right\">";
+	$content .= "[<a href=\"/wiki/" . $page_name . "?action=edit\">Edit</a>] ";
+	$content .= "[<a href=\"/wiki/" . $page_name . "?action=show_history\">History</a>] ";
+	$content .= "</p>";
 	return $o . $content;
 }
 
