@@ -90,6 +90,8 @@ function get_revisions($page_name) {
 			array_push($buf, $r[0]);
 			$r = q("SELECT commit_id, author, predecessor, time, comment FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['predecessor']));
 		}
+		// We have to push last reuslt or else we won't see page's initial commit
+		array_push($buf, $r[0]);
 	}
 	return $buf;
 }
