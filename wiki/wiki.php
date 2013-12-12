@@ -151,18 +151,24 @@ function show_edit(&$a) {
 function show_history(&$a) {
 	require_once("parser/wikiParser.class.php");
 	$page_name = get_page_name($a);
-	$content = "<table border=\"1\">";
-	$content .="<tr><th>ID</th><th>Timestamp</th><th>Author</th><th>Comment</th></tr>";
+	$content = "<form action=\"/wiki/".$page_name."\" method=\"get\">";
+	$content .= "<input type=\"hidden\" name=\"action\" value=\"show_diff\">";
+	$content .= "<table border=\"1\">";
+	$content .="<tr><th>ID</th><th>A</th><th>B</th><th>Timestamp</th><th>Author</th><th>Comment</th></tr>";
 	$parser = new wikiParser();
 	foreach (get_revisions($page_name) as $r) {
 		$content .= "<tr>";
 		$content .= "<td><a href=\"/wiki/" . $page_name . "?revision=" . $r['commit_id'] . "\">" . $r['commit_id'] . "</a></td>";
+		$content .= "<td><input type=\"radio\" name=\"rev_a\" value=\"".$r['commit_id']."\"/></td>"; 
+		$content .= "<td><input type=\"radio\" name=\"rev_b\" value=\"".$r['commit_id']."\"/></td>"; 
 		$content .= "<td><a href=\"/wiki/" . $page_name . "?revision=" . $r['commit_id'] . "\">" . $r['time'] . "</a></td>";
 		$content .= "<td>" . $r['author'] . "</td>";
 		$content .= "<td>" . $parser->parse($r['comment']) . "</td>";
 		$content .= "</tr>";
 	}
 	$content .= "</table>";
+	$content .= "<input type=\"submit\" value=\"Compare A -> B\"/>";
+	$content .= "</form>";
 	return $content;
 }
 
