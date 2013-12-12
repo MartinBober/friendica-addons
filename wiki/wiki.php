@@ -95,6 +95,15 @@ function get_revisions($page_name) {
 	return $buf;
 }
 
+function revision_belongs_to_page($page_name, $revision) {
+	foreach (get_revisions($page_name) as $r) {
+		if ($r['commit_id'] == $revision) {
+			return true;
+		}
+	}
+	return false;
+}
+
 function show_page(&$a) {
 	$page_name = get_page_name($a);
 	$format = "html";
@@ -104,13 +113,7 @@ function show_page(&$a) {
 	$revision = "HEAD";
 	if (array_key_exists('revision', $_GET)) {
 		$revision_in_page_hist = false;
-		foreach (get_revisions($page_name) as $r) {
-			if ($r['commit_id'] == $_GET['revision']) {
-				$revision_in_page_hist = true;
-				break;
-			}
-		}
-		if (!$revision_in_page_hist) {
+		if (! revision_belongs_to_page($page_name, $_GET['revision'])) {
 			return "Revision " . $_GET['revision'] . " does not exist for page " . $page_name;
 		}
 		$revision = $_GET['revision'];
@@ -163,6 +166,25 @@ function show_history(&$a) {
 	return $content;
 }
 
+function show_diff(&$a) {
+	$a->page['htmlhead'] ="<style type=\"text/css\">body {        margin: 0;        border: 0;        padding: 0;        font-size: 11pt;        } body > h1 {        margin:0 0 0.5em 0;        font: 2em sans-serif;        background-color: #def        } body > div {        padding:2px;        } p {        margin-top: 0;        } ins {        color: green;        background: #dfd;        text-decoration: none;        } del {        color: red;        background: #fdd;        text-decoration: none;        } code {        font-size: smaller;        } #params {        margin: 1em 0;        font: 14px sans-serif;        } .code {        margin-left: 2em;        font: 12px monospace;        } .ins {        background:#dfd;        } .del {        background:#fdd;        } .rep {        color: #008;        background: #eef;        } .panecontainer {        display: inline-block;        width: 49.5%;        vertical-align: top;        } .panecontainer > p {        margin: 0;        border: 1px solid #bcd;        border-bottom: none;        padding: 1px 3px;        background: #def;        font: 14px sans-serif        } .panecontainer > p + div {        margin: 0;        padding: 2px 0 2px 2px;        border: 1px solid #bcd;        border-top: none;        } .pane {        margin: 0;        padding: 0;        border: 0;        width: 100%;        min-height: 20em;        overflow:auto;        font: 12px monospace;        } #htmldiff.onlyDeletions ins {display:none} #htmldiff.onlyInsertions del {display:none}</style>";
+	$page_name = get_page_name($a);
+	if ((!array_key_exists('rev_a', $_GET)) or (!array_key_exists('rev_b', $_GET))) {
+		return "Invalid Arguments";
+	}
+	$rev_a = $_GET['rev_a'];
+	$rev_b = $_GET['rev_b'];
+	if ((!revision_belongs_to_page($page_name, $rev_a)) or (!revision_belongs_to_page($page_name, $rev_b))) {
+		return "Invalid Arguments";
+	}
+	require_once("PHP-FineDiff/finediff.php");
+	$text_a = get_page_content($page_name, "raw", $rev_a);
+	$text_b = get_page_content($page_name, "raw", $rev_b);
+	$opcodes = FineDiff::getDiffOpcodes($text_a, $text_b);
+	return str_replace("\n", "<br/>", FineDiff::renderDiffToHTMLFromOpcodes($text_a, $opcodes));
+	
+}
+
 function commit_edit(&$a) {
 	$page_name = get_page_name($a);
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
@@ -192,6 +214,9 @@ function wiki_content(&$a) {
 
 	if ($_GET['action'] == 'show_history') {
 		return $o. show_history($a);
+	}
+	if ($_GET['action'] == 'show_diff') {
+		return $o . show_diff($a);
 	}
 	
 	$page_name = get_page_name($a);
