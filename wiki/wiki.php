@@ -51,15 +51,27 @@ function wiki_get_user(&$a) {
 }
 
 
-function get_page_content($page_name) {
+function get_page_content($page_name, $format="html", $revision="HEAD") {
 	$content = "";
 	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
 	if (count($r)) {
-		$r = q("SELECT `content` FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['commit_id']));
+		$commit_id = $r[0]['commit_id'];
+		if ($revision != "HEAD") {
+			$commit_id = $revision;
+		}
+		$r = q("SELECT `content` FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($commit_id));
 		if (count($r)) {
-			require_once("parser/wikiParser.class.php");
-			$parser = new wikiParser();
-			$content = $parser->parse($r[0]['content']);
+			if ($format == "html") {
+				require_once("parser/wikiParser.class.php");
+				$parser = new wikiParser();
+				$content = $parser->parse($r[0]['content']);
+			}
+			if ($format == "raw") {
+				$content = $r[0]['content'];
+			}
+			if ($content == "") {
+				$content = "Unknown format: " . $format;
+			}
 		}
 	} else {
 		$content = "Did not find page with title " . $page_name . "</br>";
@@ -67,19 +79,6 @@ function get_page_content($page_name) {
 	return $content;
 }
 
-function get_page_raw_content($page_name) {
-	$content = "";
-	$r = q("SELECT `commit_id` FROM `wiki_pages` WHERE `title`='%s' LIMIT 1", dbesc($page_name));
-	if (count($r)) {
-		$r = q("SELECT `content` FROM `wiki_commits` WHERE `commit_id`=%d LIMIT 1", intval($r[0]['commit_id']));
-		if (count($r)) {
-			$content = $r[0]['content'];
-		}
-	} else {
-		$content = "Did not find page with title " . $page_name;
-	}
-	return $content;
-}
 
 function get_revisions($page_name) {
 	$buf = array();
@@ -98,7 +97,25 @@ function get_revisions($page_name) {
 
 function show_page(&$a) {
 	$page_name = get_page_name($a);
-	$content = get_page_content($page_name);
+	$format = "html";
+	if (array_key_exists('format', $_GET)) {
+		$format = $_GET['format'];
+	}
+	$revision = "HEAD";
+	if (array_key_exists('revision', $_GET)) {
+		$revision_in_page_hist = false;
+		foreach (get_revisions($page_name) as $r) {
+			if ($r['commit_id'] == $_GET['revision']) {
+				$revision_in_page_hist = true;
+				break;
+			}
+		}
+		if (!$revision_in_page_hist) {
+			return "Revision " . $_GET['revision'] . " does not exist for page " . $page_name;
+		}
+		$revision = $_GET['revision'];
+	}
+	$content = get_page_content($page_name, $format, $revision);
 	
 	return "<br/>" . $content;
 }
@@ -108,7 +125,7 @@ function show_edit(&$a) {
 	$page_name = get_page_name($a);
 	$input_content = $_POST['input_content'];
 	if (!array_key_exists('input_content', $_POST)) {
-		$input_content = get_page_raw_content($page_name);
+		$input_content = get_page_content($page_name, "raw");
 	}
 	$comment = "";
 	if (array_key_exists('input_comment', $_POST)) {
@@ -130,13 +147,14 @@ function show_edit(&$a) {
 
 function show_history(&$a) {
 	require_once("parser/wikiParser.class.php");
+	$page_name = get_page_name($a);
 	$content = "<table border=\"1\">";
 	$content .="<tr><th>ID</th><th>Timestamp</th><th>Author</th><th>Comment</th></tr>";
 	$parser = new wikiParser();
-	foreach (get_revisions(get_page_name($a)) as $r) {
+	foreach (get_revisions($page_name) as $r) {
 		$content .= "<tr>";
-		$content .= "<td>" . $r['commit_id'] . "</td>";
-		$content .= "<td>" . $r['time'] . "</td>";
+		$content .= "<td><a href=\"/wiki/" . $page_name . "?revision=" . $r['commit_id'] . "\">" . $r['commit_id'] . "</a></td>";
+		$content .= "<td><a href=\"/wiki/" . $page_name . "?revision=" . $r['commit_id'] . "\">" . $r['time'] . "</a></td>";
 		$content .= "<td>" . $r['author'] . "</td>";
 		$content .= "<td>" . $parser->parse($r['comment']) . "</td>";
 		$content .= "</tr>";
