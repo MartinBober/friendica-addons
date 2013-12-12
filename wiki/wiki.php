@@ -181,7 +181,9 @@ function show_diff(&$a) {
 	$text_a = get_page_content($page_name, "raw", $rev_a);
 	$text_b = get_page_content($page_name, "raw", $rev_b);
 	$opcodes = FineDiff::getDiffOpcodes($text_a, $text_b);
-	return str_replace("\n", "<br/>", FineDiff::renderDiffToHTMLFromOpcodes($text_a, $opcodes));
+	$content = "<h2>Diff of ".$page_name." from ".$rev_a." to ".$rev_b."</h2><hr/>";
+	$content .= str_replace("\n", "<br/>", FineDiff::renderDiffToHTMLFromOpcodes($text_a, $opcodes));
+	return $content;
 	
 }
 
